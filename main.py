@@ -7,9 +7,16 @@ init(autoreset=True)
 
 class ProductList:
     def __init__(self):
-        self.options = sys.argv[1:]
-        self.file_name = self.options[0]
-        self.action = self.options[1]
+
+        if len(sys.argv) == 1:
+            print(f'{Fore.RED}[-] Пожалуйста, укажите название файла!')
+            sys.exit()
+        elif len(sys.argv) == 2:
+            print(f'{Fore.RED}[-] Пожалуйста, укажите действие!')
+            sys.exit()
+        elif len(sys.argv) == 3:
+            self.file_name = sys.argv[1]
+            self.action = sys.argv[2]
 
     def add_to_list(self):
         if not os.path.exists(f'{self.file_name}.txt'):
@@ -104,6 +111,7 @@ class ProductList:
 
 if __name__ == '__main__':
     my_product_list = ProductList()
+
     if my_product_list.action == 'add':
         my_product_list.add_to_list()
 
@@ -118,3 +126,5 @@ if __name__ == '__main__':
 
     elif my_product_list.action == 'list':
         my_product_list.list()
+    else:
+        print(f'{Fore.RED}[-] Такого действия не сушествует!')
