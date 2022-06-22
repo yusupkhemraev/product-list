@@ -100,14 +100,20 @@ class ProductList:
         print(f'\n{Fore.GREEN}Общая сумма: {total_prices} сомони')
 
     def list(self):
-        print(f'\n{Fore.GREEN}Список!\n')
+        if not os.path.exists(f'{self.file_name}.txt'):
+            open(f'{self.file_name}.txt', 'w').close()
+
         file = open(f'{self.file_name}.txt', 'r')
         product_list = file.readlines()
-        i = 0
-        for product in product_list:
-            i += 1
-            product = product.replace('\n', '')
-            print(f'{Fore.GREEN}{i}) {product}')
+        if len(product_list) > 0:
+            print(f'\n{Fore.GREEN}Список!\n')
+            i = 0
+            for product in product_list:
+                i += 1
+                product = product.replace('\n', '')
+                print(f'{Fore.GREEN}{i}) {product}')
+        else:
+            print(f'\n{Fore.YELLOW}Список пуст!')
 
 if __name__ == '__main__':
     my_product_list = ProductList()
