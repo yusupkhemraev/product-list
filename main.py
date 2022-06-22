@@ -57,7 +57,7 @@ class ProductList:
 
         if num and name and price:
             num = int(num)
-            product_list[num-1] = f'{name} - {price}\n'
+            product_list[num - 1] = f'{name} - {price}\n'
             print(f'\n{Fore.GREEN}Изменения успешно внесены в список!')
             f = open(f'{self.file_name}.txt', 'w')
             f.writelines(product_list)
@@ -127,10 +127,16 @@ if __name__ == '__main__':
     elif my_product_list.action == 'remove':
         my_product_list.remove_from_list()
 
-    elif my_product_list.action == 'amound':
+    elif my_product_list.action == 'amount':
         my_product_list.total_amount()
 
     elif my_product_list.action == 'list':
         my_product_list.list()
     else:
         print(f'{Fore.RED}[-] Такого действия не сушествует!')
+        print(f'\n{Fore.CYAN}Действия:\n'
+              f'add - Добавить\n'
+              f'change - Изменить\n'
+              f'remove - Удалить\n'
+              f'amount - Общая сумма\n'
+              f'list - Список\n')
