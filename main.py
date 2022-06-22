@@ -3,15 +3,13 @@ import os
 import re
 from colorama import init, Fore
 
+init(autoreset=True)
 
 class ProductList:
     def __init__(self):
-        init(autoreset=True)
         self.options = sys.argv[1:]
         self.file_name = self.options[0]
         self.action = self.options[1]
-
-        # self.product_list = []
 
     def add_to_list(self):
         if not os.path.exists(f'{self.file_name}.txt'):
