@@ -30,12 +30,23 @@ class ProductList:
         print(f'{Fore.YELLOW}Цена: ', end='')
         price = input()
 
+        product_list = ''.join(product_list).replace(' - ', '')
+        product_name = re.split('\d+', product_list)
+        while '' in product_name:
+            product_name.remove('')
+
         if name and price:
-            product_list.add(f'{name} - {price}\n')
-            f = open(f'{self.file_name}.txt', 'w')
-            for product in product_list:
-                f.writelines(product)
-            print(f'\n{Fore.GREEN}{name} успешно добавлен!')
+            if name in product_list:
+                print(f'\n{Fore.RED}Уже имеется в списке')
+            else:
+                file = open(f'{self.file_name}.txt', 'r')
+                product_list = file.readlines()
+                product_list = set(product_list)
+                product_list.add(f'{name} - {price}\n')
+                f = open(f'{self.file_name}.txt', 'w')
+                for product in product_list:
+                    f.writelines(product)
+                print(f'\n{Fore.GREEN}{name} успешно добавлен!')
         else:
             print(f'{Fore.RED}[-] Вы не указали название или цену!')
 
