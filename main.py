@@ -1,153 +1,170 @@
-import sys
 import os
-import re
+import sys
+import json
+import argparse
+from art import *
 from colorama import init, Fore
 
 init(autoreset=True)
 
+
 class ProductList:
     def __init__(self):
+        tprint('Product List')
+        parser = argparse.ArgumentParser()
 
-        if len(sys.argv) == 1:
-            print(f'{Fore.RED}[-] Пожалуйста, укажите название файла!')
-            sys.exit()
-        elif len(sys.argv) == 2:
-            print(f'{Fore.RED}[-] Пожалуйста, укажите действие!')
-            sys.exit()
-        elif len(sys.argv) == 3:
-            self.file_name = sys.argv[1]
-            self.action = sys.argv[2]
+        parser.add_argument('-f', '--file-name', dest='file_name', help='Название файла', required=True)
+        parser.add_argument('-a', '--action', dest='action',
+                            help='Пожалуйста, укажите действие.'
+                                 'add - Добавить, change - Изменить,'
+                                 'remove - Удалить, amount - Итоговая сумма',
+                            required=True)
+        self.args = parser.parse_args()
 
-    def add_to_list(self):
-        if not os.path.exists(f'{self.file_name}.txt'):
-            open(f'{self.file_name}.txt', 'w').close()
-        file = open(f'{self.file_name}.txt', 'r')
-        product_list = file.readlines()
-        product_list = set(product_list)
+        if not self.args.file_name:
+            parser.error('[-] Пожалуйста укажите название файла без расширения, используйте --help для получения '
+                         'дополнительной информации.')
+        elif not self.args.action:
+            parser.error('[-] Пожалуйста укажите действие, используйте --help для получения дополнительной информации.')
 
-        print(f'{Fore.YELLOW}Название: ', end='')
-        name = input()
-        print(f'{Fore.YELLOW}Цена: ', end='')
-        price = input()
-
-        product_list = ''.join(product_list).replace(' - ', '')
-        product_name = re.split('\d+', product_list)
-        while '' in product_name:
-            product_name.remove('')
-
-        if name and price:
-            if name in product_list:
-                print(f'\n{Fore.RED}Уже имеется в списке')
-            else:
-                file = open(f'{self.file_name}.txt', 'r')
-                product_list = file.readlines()
-                product_list = set(product_list)
-                product_list.add(f'{name} - {price}\n')
-                f = open(f'{self.file_name}.txt', 'w')
-                for product in product_list:
-                    f.writelines(product)
-                print(f'\n{Fore.GREEN}{name} успешно добавлен!')
+        if self.args.action == 'append':
+            self.append_to_list()
+        elif self.args.action == 'change':
+            self.change_list()
+        elif self.args.action == 'remove':
+            self.remove_from_list()
+        elif self.args.action == 'sum':
+            self.total_price()
         else:
-            print(f'{Fore.RED}[-] Вы не указали название или цену!')
+            parser.error('[-] Действие не найдено, используйте --help для получения дополнительной информации.')
+
+    def append_to_list(self):
+        product_list = []
+        if not os.path.exists(f'{self.args.file_name}.json'):
+            open(f'{self.args.file_name}.json', 'w', encoding='utf-8').close()
+
+        with open(f'{self.args.file_name}.json', 'r', encoding='utf-8') as f:
+            try:
+                product_list = json.load(f)
+                if not product_list:
+                    print(f'{Fore.MAGENTA}[-] Список пуст!')
+            except json.decoder.JSONDecodeError:
+                pass
+
+        print(f'\n{Fore.YELLOW}[*] Название: ', end='')
+        name = input()
+        if not name:
+            print(f'{Fore.RED}[-] Вы не ввели название. Повторите ввод')
+            sys.exit()
+
+        try:
+            print(f'\n{Fore.YELLOW}[*] Цена: ', end='')
+            price = float(input())
+            product_list.append({'name': name, 'price': price})
+            print(f'\n{Fore.GREEN}[+] {name} успешно добавлен!')
+
+            with open(f'{self.args.file_name}.json', 'w', encoding='utf-8') as file:
+                json.dump(product_list, file, indent=4, ensure_ascii=False)
+
+        except ValueError:
+            print(f'{Fore.RED}[-] Вы ввели не число. Повторите ввод')
 
     def change_list(self):
-        file = open(f'{self.file_name}.txt', 'r')
-        product_list = file.readlines()
-        i = 0
-        for product in product_list:
-            i += 1
-            product = product.replace('\n', '')
-            print(f'{Fore.GREEN}{i}) {product}')
+        if not os.path.exists(f'{self.args.file_name}.json'):
+            open(f'{self.args.file_name}.json', 'w', encoding='utf-8').close()
 
-        print(f'\n{Fore.YELLOW}Введите номер строки которую хотите именить: ', end='')
-        num = input()
-        print(f'\n{Fore.YELLOW}Название: ', end='')
+        with open(f'{self.args.file_name}.json', 'r', encoding='utf-8') as f:
+            try:
+                product_list = json.load(f)
+                if product_list:
+                    for i, product in enumerate(product_list, start=1):
+                        print(f'{Fore.YELLOW}{i}. {product["name"]} - {product["price"]}')
+                else:
+                    print(f'{Fore.MAGENTA}[-] Список пуст!')
+                    sys.exit()
+
+            except json.decoder.JSONDecodeError:
+                return print(f'{Fore.MAGENTA}[-] Список пуст!')
+
+        print(f'\n{Fore.YELLOW}[*] Что хотитие изменить?: ', end='')
+        old_name = input()
+        if not old_name:
+            print(f'{Fore.RED}[-] Вы не ввели название. Повторите ввод')
+            sys.exit()
+
+        print(f'\n{Fore.YELLOW}[*] Новое название: ', end='')
         name = input()
-        print(f'{Fore.YELLOW}Цена: ', end='')
-        price = input()
+        if not name:
+            print(f'{Fore.RED}[-] Вы не ввели новое название. Повторите ввод')
+            sys.exit()
 
-        if num and name and price:
-            num = int(num)
-            product_list[num - 1] = f'{name} - {price}\n'
-            print(f'\n{Fore.GREEN}Изменения успешно внесены в список!')
-            f = open(f'{self.file_name}.txt', 'w')
-            f.writelines(product_list)
+        try:
+            print(f'\n{Fore.YELLOW}[*] Новая цена: ', end='')
+            price = float(input())
 
-        else:
-            print(f'{Fore.RED}[-] Вы не указали название, цену или номер строки!')
+            for product in product_list:
+                if old_name == product['name']:
+                    product['name'] = name
+                    product['price'] = price
+                    print(f'\n{Fore.GREEN}[+] {old_name} успешно изменён на {name}')
+
+            with open(f'{self.args.file_name}.json', 'w', encoding='utf-8') as f:
+                json.dump(product_list, f, indent=4, ensure_ascii=False)
+
+        except ValueError:
+            print(f'{Fore.RED}[-] Вы ввели не число. Повторите ввод')
 
     def remove_from_list(self):
-        file = open(f'{self.file_name}.txt', 'r')
-        product_list = file.readlines()
-        i = 0
+        if not os.path.exists(f'{self.args.file_name}.json'):
+            open(f'{self.args.file_name}.json', 'w', encoding='utf-8').close()
+
+        with open(f'{self.args.file_name}.json', 'r', encoding='utf-8') as f:
+            try:
+                product_list = json.load(f)
+                if product_list:
+                    for i, product in enumerate(product_list, start=1):
+                        print(f'{Fore.YELLOW}{i}. {product["name"]} - {product["price"]}')
+                else:
+                    print(f'{Fore.MAGENTA}[-] Список пуст!')
+                    sys.exit()
+
+            except json.decoder.JSONDecodeError:
+                return print(f'{Fore.MAGENTA}[-] Список пуст!')
+
+        print(f'\n{Fore.YELLOW}[*] Что хотитие удалить?: ', end='')
+        name = input()
+        if not name:
+            print(f'{Fore.RED}[-] Вы не ввели название. Повторите ввод')
+            sys.exit()
+
         for product in product_list:
-            i += 1
-            product = product.replace('\n', '')
-            print(f'{Fore.GREEN}{i}) {product}')
+            if name == product['name']:
+                product_list.remove({'name': name, 'price': product['price']})
+                print(f'\n{Fore.RED}[+] {name} успешно удалён')
 
-        print(f'\n{Fore.YELLOW}Введите номер строки которую хотите удалить: ', end='')
-        num = input()
+        with open(f'{self.args.file_name}.json', 'w', encoding='utf-8') as f:
+            json.dump(product_list, f, indent=4, ensure_ascii=False)
 
-        if num:
-            num = int(num)
-            product_list.pop(num - 1)
-            f = open(f'{self.file_name}.txt', 'w')
-            f.writelines(product_list)
-            print(f'\n{Fore.RED}Элемент успешно удалён!')
+    def total_price(self):
 
-    def total_amount(self):
-        file = open(f'{self.file_name}.txt', 'r')
-        product_list = file.readlines()
-        product_list = ''.join(product_list)
-        prices = re.split('\D+', product_list)
-        while '' in set(prices):
-            prices.remove('')
+        if not os.path.exists(f'{self.args.file_name}.json'):
+            open(f'{self.args.file_name}.json', 'w', encoding='utf-8').close()
+        with open(f'{self.args.file_name}.json', 'r', encoding='utf-8') as f:
+            try:
+                product_list = json.load(f)
+                if not product_list:
+                    print(f'{Fore.MAGENTA}[-] Список пуст!')
+                    sys.exit()
 
-        int_prices = []
-        for price in prices:
-            int_prices.append(int(price))
+            except json.decoder.JSONDecodeError:
+                return print(f'{Fore.MAGENTA}[-] Список пуст!')
 
-        total_prices = sum(int_prices)
-        print(f'\n{Fore.GREEN}Общая сумма: {total_prices} сомони')
+        total = []
+        for product in product_list:
+            total.append(product["price"])
 
-    def list(self):
-        if not os.path.exists(f'{self.file_name}.txt'):
-            open(f'{self.file_name}.txt', 'w').close()
+        print(f'{Fore.GREEN}[+] Итоговая цена: {sum(total)}')
 
-        file = open(f'{self.file_name}.txt', 'r')
-        product_list = file.readlines()
-        if len(product_list) > 0:
-            print(f'\n{Fore.GREEN}Список!\n')
-            i = 0
-            for product in product_list:
-                i += 1
-                product = product.replace('\n', '')
-                print(f'{Fore.GREEN}{i}) {product}')
-        else:
-            print(f'\n{Fore.YELLOW}Список пуст!')
 
 if __name__ == '__main__':
-    my_product_list = ProductList()
-
-    if my_product_list.action == 'add':
-        my_product_list.add_to_list()
-
-    elif my_product_list.action == 'change':
-        my_product_list.change_list()
-
-    elif my_product_list.action == 'remove':
-        my_product_list.remove_from_list()
-
-    elif my_product_list.action == 'amount':
-        my_product_list.total_amount()
-
-    elif my_product_list.action == 'list':
-        my_product_list.list()
-    else:
-        print(f'{Fore.RED}[-] Такого действия не сушествует!')
-        print(f'\n{Fore.CYAN}Действия:\n'
-              f'add - Добавить\n'
-              f'change - Изменить\n'
-              f'remove - Удалить\n'
-              f'amount - Общая сумма\n'
-              f'list - Список\n')
+    p = ProductList()
